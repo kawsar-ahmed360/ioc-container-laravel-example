@@ -1,0 +1,119 @@
+ioc container laravel bangla example
+
+Laravel-এ IoC (Inversion of Control) কন্টেইনার একটি শক্তিশালী প্যাটার্ন যা ডিপেনডেন্সি ইনজেকশন পরিচালনা করে। এটি আপনাকে ক্লাসগুলির নির্ভরতাগুলি সহজে এবং স্বয়ংক্রিয়ভাবে পরিচালনা করতে সহায়তা করে। Laravel-এর IoC কন্টেইনার আপনাকে ক্লাসের অবজেক্ট তৈরির নিয়ন্ত্রণ নিতে এবং প্রয়োজনীয় ডিপেনডেন্সিগুলি ইনজেক্ট করতে দেয়।
+
+এখানে একটি মৌলিক উদাহরণ দিয়ে বুঝানো হলো কিভাবে Laravel-এ IoC কন্টেইনার ব্যবহার করা যায়:
+
+উদাহরণ: একটি পরিষেবা ক্লাস ইনজেকশন
+ধরা যাক, আমাদের একটি UserService ক্লাস রয়েছে যা একটি UserRepository ক্লাসের ওপর নির্ভরশীল। আমরা এই নির্ভরতাগুলিকে IoC কন্টেইনারের মাধ্যমে ইনজেক্ট করতে পারি।
+
+১. UserRepository ক্লাস
+প্রথমে একটি UserRepository ক্লাস তৈরি করি:
+
+php
+Copy code
+
+<?php
+namespace App\Repositories;
+class UserRepository
+{
+    public function getAllUsers()
+    {
+        // সাধারণত ডেটাবেস থেকে ইউজার তথ্য ফেচ করার কোড এখানে থাকবে
+        return ['John Doe', 'Jane Doe'];
+    }
+}
+
+
+২. UserService ক্লাস
+এরপর একটি UserService ক্লাস তৈরি করি যা UserRepository ক্লাসের ওপর নির্ভরশীল:
+
+php
+Copy code
+
+<?php
+namespace App\Services;
+use App\Repositories\UserRepository;
+class UserService
+{
+    protected $userRepository;
+
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
+
+    public function getUsers()
+    {
+        return $this->userRepository->getAllUsers();
+    }
+}
+
+
+৩. সার্ভিস প্রোভাইডার নিবন্ধন করা
+Laravel-এ একটি সার্ভিস প্রোভাইডার ব্যবহার করে ক্লাসগুলির ইনজেকশন কনফিগার করা হয়। সাধারণত, আপনি এই কাজটি AppServiceProvider এ করবেন:
+
+php
+Copy code
+
+
+<?php
+namespace App\Providers;
+use Illuminate\Support\ServiceProvider;
+use App\Repositories\UserRepository;
+use App\Services\UserService;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+        // IoC কন্টেইনারে UserService এবং UserRepository নিবন্ধন করা হচ্ছে
+        $this->app->bind(UserRepository::class, function ($app) {
+            return new UserRepository();
+        });
+
+        $this->app->bind(UserService::class, function ($app) {
+            return new UserService($app->make(UserRepository::class));
+        });
+    }
+}
+
+
+৪. কন্ট্রোলার ব্যবহার করা
+এখন, আপনি UserService ক্লাসটিকে আপনার কন্ট্রোলারে ইনজেক্ট করতে পারেন:
+
+php
+Copy code
+
+
+<?php
+namespace App\Http\Controllers;
+use App\Services\UserService;
+class UserController extends Controller
+{
+    protected $userService;
+
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+    }
+
+    public function index()
+    {
+        $users = $this->userService->getUsers();
+        return view('users.index', ['users' => $users]);
+    }
+}
+
+
+সারাংশ:
+UserRepository ক্লাস: একটি সহজ ক্লাস যা ডেটা সরবরাহ করে।
+UserService ক্লাস: UserRepository ক্লাসের ওপর নির্ভরশীল।
+AppServiceProvider: IoC কন্টেইনারে ক্লাসগুলির নিবন্ধন করে।
+UserController: UserService ক্লাসটি কনস্ট্রাক্টরের মাধ্যমে ইনজেক্ট করে।
+এই প্রক্রিয়ায়, Laravel-এর IoC কন্টেইনার আপনাকে ক্লাসগুলির ডিপেনডেন্সিগুলি স্বয়ংক্রিয়ভাবে ইনজেক্ট করতে সাহায্য করে, যা কোডের মডুলারিটি এবং রিইউজেবিলিটি বৃদ্ধি করে।
